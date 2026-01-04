@@ -640,7 +640,7 @@ function toggleLaunchView(view) {
     const sections = {
         fuel: document.getElementById('formFuel'),
         maint: document.getElementById('formMaint'),
-        trip: document.getElementById('sectionTripClose')
+        trip: document.getElementById('formTrip')
     };
 
     // IDs dos botões
