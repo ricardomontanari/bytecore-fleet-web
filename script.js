@@ -417,10 +417,127 @@ async function loadCompanyUsers() {
 // FUNÇÕES AUXILIARES (Gráficos, Fotos, Máscaras)
 // ==================================================================
 
-function loadGlobalStats() {
-    // Carrega estatísticas básicas (Simulado por enquanto para não travar se rota all-movements demorar)
-    // Para implementação real, conecte com /all-movements e some os valores
-    console.log("Atualizando estatísticas...");
+async function loadGlobalStats() {
+    try {
+        if (!currentUser) return;
+
+        // 1. Busca todos os movimentos do banco (Rota que criamos no server.js)
+        const res = await fetch(`${API_BASE_URL}/company/${currentUser.company_id}/all-movements`);
+        if (!res.ok) throw new Error("Erro ao buscar estatísticas");
+        
+        const movements = await res.json();
+
+        // 2. Filtra apenas os dados do Mês Atual
+        const now = new Date();
+        const currentMonth = now.getMonth(); // 0 a 11
+        const currentYear = now.getFullYear();
+
+        const monthlyMovs = movements.filter(m => {
+            // Cria a data ajustando o fuso para evitar cair no mês anterior
+            const parts = m.date.split('-'); // Espera YYYY-MM-DD
+            const year = parseInt(parts[0]);
+            const month = parseInt(parts[1]) - 1; // JS conta meses de 0 a 11
+            return month === currentMonth && year === currentYear;
+        });
+
+        // 3. Calcula os Totais
+        let totalLiters = 0;
+        let totalCost = 0;
+        let fuelCost = 0;
+        let maintCost = 0;
+
+        monthlyMovs.forEach(m => {
+            const val = parseFloat(m.value) || 0;
+            totalCost += val;
+
+            // Verifica se é abastecimento (compatível com 'FUEL' antigo ou 'Abastecimento' novo)
+            if (m.type === 'Abastecimento' || m.type === 'FUEL') {
+                totalLiters += parseFloat(m.liters) || 0;
+                fuelCost += val;
+            } else {
+                maintCost += val; // Manutenção
+            }
+        });
+
+        // 4. Atualiza os números na tela
+        const litEl = document.getElementById('totalLiters');
+        const costEl = document.getElementById('totalCost');
+        const dateEl = document.getElementById('headerDate');
+
+        // Formata e exibe
+        if (litEl) litEl.innerText = totalLiters.toFixed(1);
+        if (costEl) costEl.innerText = `R$ ${totalCost.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+        
+        // Atualiza a data no cabeçalho (Ex: "Janeiro 2026")
+        if (dateEl) {
+            const monthNames = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+            dateEl.innerText = `Resumo de ${monthNames[currentMonth]} ${currentYear}`;
+        }
+
+        // 5. Desenha o Gráfico
+        renderChart(fuelCost, maintCost);
+
+    } catch (e) {
+        console.error("Erro Dashboard:", e);
+    }
+}
+
+function renderChart(fuel, maintenance) {
+    const ctx = document.getElementById('expenseChart');
+    if (!ctx) return;
+
+    // Se já existir um gráfico, destrói antes de criar outro (evita bugs visuais)
+    if (expenseChart) {
+        expenseChart.destroy();
+    }
+
+    // Se não houver dados, cria um gráfico vazio visual
+    if (fuel === 0 && maintenance === 0) {
+        fuel = 1; // Apenas para aparecer um círculo cinza
+        maintenance = 0;
+        var colors = ['#E2E8F0', '#E2E8F0'];
+    } else {
+        var colors = ['#2563EB', '#F59E0B']; // Azul (Combustível) e Laranja (Manutenção)
+    }
+
+    expenseChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Combustível', 'Manutenção'],
+            datasets: [{
+                data: [fuel, maintenance],
+                backgroundColor: colors,
+                borderWidth: 0,
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        usePointStyle: true,
+                        font: { size: 12 }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.label || '';
+                            if (label) label += ': ';
+                            if (context.parsed !== null) {
+                                label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.parsed);
+                            }
+                            return label;
+                        }
+                    }
+                }
+            },
+            cutout: '70%', // Deixa o gráfico mais fino e elegante
+        }
+    });
 }
 
 function handlePhoto(input) {
