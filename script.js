@@ -63,6 +63,7 @@ function loadSystem() {
     loadHistory(); // Carrega histórico na Home também
     loadSettings();
     updateDashboardSummary();
+    loadTripsHistory();
 }
 
 // ==================================================================
@@ -515,6 +516,55 @@ async function updateDashboardSummary() {
 
     } catch (error) {
         console.error("Erro ao atualizar dashboard:", error);
+    }
+}
+
+// 13. Dados do Histórico de Viagensgit 
+async function loadTripsHistory() {
+    if (!currentUser) return;
+    const container = document.getElementById('tripsList');
+    if (!container) return;
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/company/${currentUser.company_id}/trips`);
+        const trips = await response.json();
+
+        container.innerHTML = trips.map(trip => `
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">${trip.plate}</span>
+                        <h4 class="font-bold text-slate-800">${trip.model}</h4>
+                    </div>
+                    <span class="text-xs text-slate-400">${new Date(trip.end_date).toLocaleDateString('pt-BR')}</span>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4 py-3 border-y border-slate-50 my-3">
+                    <div>
+                        <p class="text-[10px] text-slate-400 uppercase">Distância</p>
+                        <p class="font-bold text-slate-700">${trip.distance_run} KM</p>
+                    </div>
+                    <div>
+                        <p class="text-[10px] text-slate-400 uppercase">Média Consumo</p>
+                        <p class="font-bold text-slate-700">${parseFloat(trip.average_consumption).toFixed(2)} KM/L</p>
+                    </div>
+                </div>
+
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-[10px] text-slate-400 uppercase">Lucro Líquido</p>
+                        <p class="font-bold text-green-600">R$ ${parseFloat(trip.net_profit).toFixed(2)}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-[10px] text-slate-400 uppercase">Pedágio</p>
+                        <p class="text-sm font-medium text-slate-600 text-red-400">- R$ ${parseFloat(trip.toll_cost).toFixed(2)}</p>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+
+    } catch (error) {
+        console.error("Erro ao carregar histórico de viagens:", error);
     }
 }
 
