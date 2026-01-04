@@ -27,26 +27,32 @@ window.onload = function() {
         document.getElementById('loginScreen').classList.remove('hidden');
     }
 
-    // 4. Listeners de Eventos (Placas) para buscar KM automaticamente
-    const gPlate = document.getElementById('gPlate');
-    if (gPlate) gPlate.addEventListener('change', (e) => fetchLastKm(e.target.value, 'gKm'));
+    // 4. PREENCHER DATA ATUAL (CORRIGIDO PARA HORÁRIO LOCAL)
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const todayString = `${year}-${month}-${day}`;
+
+    // Preenche Abastecimento
+    const fuelDate = document.getElementById('gDate');
+    if (fuelDate) fuelDate.value = todayString;
+
+    // Preenche Manutenção
+    const maintDate = document.getElementById('mDateTime');
+    if (maintDate) maintDate.value = todayString;
+
+    // 5. CONFIGURAÇÃO DE LISTENERS DE PLACA
     
+    // Para Abastecimento: NÃO preenchemos o KM (gKm) automaticamente, conforme solicitado.
+    // O listener abaixo serve apenas se você quiser fazer alguma outra validação futura.
+    const gPlate = document.getElementById('gPlate');
+    // if (gPlate) gPlate.addEventListener('change', (e) => fetchLastKm(e.target.value, 'gKm')); // <--- LINHA REMOVIDA
+    
+    // Para Manutenção: Mantemos o preenchimento automático (mKmInitial) pois geralmente é útil,
+    // mas se quiser tirar também, basta comentar a linha abaixo.
     const mPlate = document.getElementById('mPlate');
     if (mPlate) mPlate.addEventListener('change', (e) => fetchLastKm(e.target.value, 'mKmInitial'));
-
-    // 5. Preencher Data Atual Automaticamente
-    const today = new Date();
-    // Ajuste para garantir o fuso horário correto (evita pegar dia anterior se for noite)
-    today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
-    const dateString = today.toISOString().split('T')[0];
-    
-    // Preenche no Abastecimento
-    const dateInput = document.getElementById('gDate');
-    if (dateInput) dateInput.value = dateString;
-
-    // Preenche na Manutenção também (para manter o padrão)
-    const maintDate = document.getElementById('mDateTime');
-    if (maintDate) maintDate.value = dateString;
 };
 
 function loadSystem() {
@@ -61,6 +67,11 @@ function loadSystem() {
 // NAVEGAÇÃO (ABAS)
 // ==================================================================
 function switchTab(tabId) {
+    const now = new Date();
+    const todayString = now.toLocaleDateString('en-CA'); // Formato YYYY-MM-DD
+    const fDate = document.getElementById('gDate');
+    if(fDate && !fDate.value) fDate.value = todayString; // Preenche só se estiver vazio
+
     // Esconde todas as abas
     document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
     
@@ -187,10 +198,23 @@ async function saveFuelEntry() {
     const km = document.getElementById('gKm').value;
     const liters = document.getElementById('gLiters').value;
     const price = document.getElementById('gPrice').value;
-    const date = document.getElementById('gDate').value;
+    const dateInput = document.getElementById('gDate').value; 
 
-    if (!plate || !km || !liters || !price || !date) {
+    // 1. Validação Básica
+    if (!plate || !km || !liters || !price || !dateInput) {
         return alert("Preencha todos os campos.");
+    }
+
+    // 2. Validação de Data (Front-End)
+    const selectedDate = new Date(dateInput);
+    const today = new Date();
+    // Zera as horas para comparar apenas o dia
+    today.setHours(0, 0, 0, 0);
+    selectedDate.setHours(0, 0, 0, 0);
+
+    // Ajuste de fuso horário simples: se selected > today
+    if (selectedDate > today) {
+        return alert("Erro: Não é permitido lançar datas futuras.");
     }
 
     const payload = {
@@ -198,8 +222,8 @@ async function saveFuelEntry() {
         plate,
         type: 'Abastecimento',
         value: parseFloat(liters) * parseFloat(price),
-        date,
-        km_final: parseInt(km), // Assume-se que o KM digitado é o final
+        date: dateInput,
+        km_final: parseInt(km),
         liters: parseFloat(liters),
         price_per_liter: parseFloat(price),
         company_id: currentUser.company_id,
@@ -215,15 +239,21 @@ async function saveFuelEntry() {
 
         if (r.ok) {
             alert("Salvo com sucesso!");
+            // Limpa campos, mas mantém a data de hoje para facilitar o próximo
             document.getElementById('gKm').value = "";
             document.getElementById('gLiters').value = "";
-            removePhoto(); // Limpa foto
+            removePhoto(); 
             switchTab('dashboard');
             loadGlobalStats();
         } else {
-            alert("Erro ao salvar.");
+            // Se o servidor bloquear, mostramos o erro aqui
+            const err = await r.json();
+            alert("Erro: " + (err.error || "Erro ao salvar."));
         }
-    } catch (e) { console.error(e); alert("Erro de conexão."); }
+    } catch (e) { 
+        console.error(e); 
+        alert("Erro de conexão."); 
+    }
 }
 
 // 4. Salvar Manutenção
