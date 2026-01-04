@@ -33,6 +33,20 @@ window.onload = function() {
     
     const mPlate = document.getElementById('mPlate');
     if (mPlate) mPlate.addEventListener('change', (e) => fetchLastKm(e.target.value, 'mKmInitial'));
+
+    // 5. Preencher Data Atual Automaticamente
+    const today = new Date();
+    // Ajuste para garantir o fuso horário correto (evita pegar dia anterior se for noite)
+    today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
+    const dateString = today.toISOString().split('T')[0];
+    
+    // Preenche no Abastecimento
+    const dateInput = document.getElementById('gDate');
+    if (dateInput) dateInput.value = dateString;
+
+    // Preenche na Manutenção também (para manter o padrão)
+    const maintDate = document.getElementById('mDateTime');
+    if (maintDate) maintDate.value = dateString;
 };
 
 function loadSystem() {
