@@ -58,25 +58,25 @@ window.onload = function() {
 async function loadSystem() {
     if (!currentUser) return;
 
+    // Esconde login e mostra app
+    document.getElementById('loginScreen').classList.add('hidden');
+    document.getElementById('mainApp').classList.remove('hidden');
+
     try {
-        // 1. Primeiro, buscamos os veículos (essencial para os seletores)
-        const response = await fetch(`${API_BASE_URL}/company/${currentUser.company_id}/vehicles`);
-        const vehiclesData = await response.json(); // Nomeado como vehiclesData para evitar conflito
+        // 1. Carrega veículos (Essencial para os formulários funcionarem)
+        await fillVehicleSelectors();
 
-        // 2. Preenchemos os seletores com os dados recebidos
-        fillVehicleSelects(vehiclesData);
+        // 2. Carrega estatísticas básicas (Gráfico, Litros, Gastos)
+        await loadGlobalStats();
 
-        // 3. Agora carregamos o restante das informações
+        // 3. Carrega os novos módulos de Lucro e Viagens
         updateDashboardSummary();
         loadSettings();
+        loadHistory();
         loadTripsHistory();
-        
-        // Outras funções existentes...
-        if (typeof loadMovements === 'function') loadMovements();
-        if (typeof updateExpenseChart === 'function') updateExpenseChart();
 
     } catch (error) {
-        console.error("Erro ao carregar sistema:", error);
+        console.error("Erro na carga do sistema:", error);
     }
 }
 
@@ -181,24 +181,26 @@ async function fillVehicleSelectors() {
     try {
         if (!currentUser || !currentUser.company_id) return;
 
-        const selectClose = document.getElementById('closeTripVehicle');
-        if (selectClose) {
-            selectClose.innerHTML = vehicles.map(v => `<option value="${v.plate}">${v.plate} - ${v.model}</option>`).join('');
-        }
-
         const r = await fetch(`${API_BASE_URL}/company/${currentUser.company_id}/vehicles`);
         if (!r.ok) throw new Error('Falha ao buscar veículos');
         
-        const vehicles = await r.json();
-        const options = vehicles.length > 0 
-            ? '<option value="">Escolha o Veículo</option>' + vehicles.map(v => `<option value="${v.plate}">${v.plate} - ${v.model}</option>`).join('')
+        const vehiclesData = await r.json(); // Mudamos o nome para evitar conflito
+        
+        // Criamos as opções uma única vez
+        const options = vehiclesData.length > 0 
+            ? '<option value="">Escolha o Veículo</option>' + vehiclesData.map(v => `<option value="${v.plate}">${v.plate} - ${v.model}</option>`).join('')
             : '<option value="">Nenhum veículo encontrado</option>';
 
-        ['searchPlate', 'gPlate', 'mPlate'].forEach(id => {
+        // Preenche todos os selects do seu HTML pelos IDs corretos
+        const targets = ['gPlate', 'mPlate', 'closeTripVehicle', 'searchPlate'];
+        targets.forEach(id => {
             const el = document.getElementById(id);
             if (el) el.innerHTML = options;
         });
-    } catch (e) { console.error("Erro ao carregar veículos:", e); }
+
+    } catch (e) { 
+        console.error("Erro ao carregar veículos:", e); 
+    }
 }
 
 // 2. Buscar KM Anterior (Automático)
@@ -593,25 +595,6 @@ async function loadTripsHistory() {
     } catch (error) {
         console.error("Erro ao carregar histórico de viagens:", error);
     }
-}
-
-// 14. View de veiculos
-function fillVehicleSelects(data) {
-    if (!data || !Array.isArray(data)) return;
-
-    // IDs corretos conforme seu HTML
-    const fuelSelect = document.getElementById('gPlate');
-    const maintSelect = document.getElementById('mPlate');
-    const closeSelect = document.getElementById('closeTripVehicle'); 
-    
-    const options = data.map(v => `<option value="${v.plate}">${v.plate} - ${v.model}</option>`).join('');
-    
-    // Adiciona uma opção vazia no início
-    const defaultOption = '<option value="">Selecione...</option>';
-
-    if (fuelSelect) fuelSelect.innerHTML = defaultOption + options;
-    if (maintSelect) maintSelect.innerHTML = defaultOption + options;
-    if (closeSelect) closeSelect.innerHTML = defaultOption + options;
 }
 
 // ==================================================================
