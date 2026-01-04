@@ -189,6 +189,41 @@
                     Salvar Manutenção
                 </button>
             </div>
+
+            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mt-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                        <i class="ph-bold ph-flag-checkered text-green-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-800">Finalizar Viagem</h3>
+                        <p class="text-xs text-slate-400">Cálculo de KM/L e Lucro Líquido</p>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-xs font-bold text-slate-500 ml-1 uppercase">Veículo</label>
+                        <select id="closeTripVehicle" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-green-500">
+                            </select>
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-bold text-slate-500 ml-1 uppercase">KM Final na Chegada</label>
+                        <input type="number" id="closeTripKmFinal" placeholder="Ex: 105200" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-green-500">
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-bold text-slate-500 ml-1 uppercase">Total Gasto em Pedágios (R$)</label>
+                        <input type="number" id="closeTripToll" step="0.01" placeholder="0,00" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-green-500">
+                    </div>
+
+                    <button onclick="submitCloseTrip()" class="w-full bg-green-600 text-white p-4 rounded-xl font-bold hover:bg-green-700 transition-all shadow-lg shadow-green-100 flex items-center justify-center gap-2">
+                        <i class="ph-bold ph-calculator"></i>
+                        Calcular e Finalizar
+                    </button>
+                </div>
+            </div>
         </div>
 
         <div id="history" class="tab-content hidden px-4">

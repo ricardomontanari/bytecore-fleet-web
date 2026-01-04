@@ -64,6 +64,7 @@ function loadSystem() {
     loadSettings();
     updateDashboardSummary();
     loadTripsHistory();
+    fillVehicleSelects();
 }
 
 // ==================================================================
@@ -458,13 +459,17 @@ async function saveSettings() {
 
 // 11. Dados de Viagens
 async function submitCloseTrip() {
+    const btn = event.currentTarget;
     const plate = document.getElementById('closeTripVehicle').value;
-    const end_km = parseInt(document.getElementById('closeTripKmFinal').value);
-    const toll_cost = parseFloat(document.getElementById('closeTripToll').value || 0);
+    const end_km = document.getElementById('closeTripKmFinal').value;
+    const toll_cost = document.getElementById('closeTripToll').value;
 
-    if (!plate || !end_km) {
-        return alert("Por favor, preencha a placa e o KM Final.");
-    }
+    if (!plate || !end_km) return alert("Preencha a Placa e o KM Final!");
+
+    // Feedback visual de carregamento
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = "Processando...";
 
     try {
         const response = await fetch(`${API_BASE_URL}/trips/close`, {
@@ -473,26 +478,32 @@ async function submitCloseTrip() {
             body: JSON.stringify({
                 plate,
                 company_id: currentUser.company_id,
-                end_km,
-                toll_cost
+                end_km: parseInt(end_km),
+                toll_cost: parseFloat(toll_cost || 0)
             })
         });
 
         const result = await response.json();
 
         if (response.ok) {
-            alert(`Viagem Finalizada!\nLucro: R$ ${result.data.net_profit.toFixed(2)}\nMédia: ${result.data.average_consumption} KM/L`);
+            alert("✅ Viagem Fechada!\n" + 
+                  "Lucro: R$ " + result.data.net_profit.toFixed(2) + "\n" +
+                  "Média: " + result.data.average_consumption + " KM/L");
             
-            // Limpa o formulário e atualiza o sistema
+            // Limpar campos
             document.getElementById('closeTripKmFinal').value = '';
             document.getElementById('closeTripToll').value = '';
-            loadSystem(); // Recarrega os dados e o dashboard
+            
+            // Atualizar Dashboard e Histórico
+            loadSystem(); 
         } else {
             alert("Erro: " + result.error);
         }
     } catch (error) {
-        console.error("Erro ao fechar viagem:", error);
-        alert("Erro de conexão com o servidor.");
+        alert("Falha na conexão com o servidor.");
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
     }
 }
 
@@ -519,7 +530,7 @@ async function updateDashboardSummary() {
     }
 }
 
-// 13. Dados do Histórico de Viagensgit 
+// 13. Dados do Histórico de Viagens
 async function loadTripsHistory() {
     if (!currentUser) return;
     const container = document.getElementById('tripsList');
@@ -566,6 +577,17 @@ async function loadTripsHistory() {
     } catch (error) {
         console.error("Erro ao carregar histórico de viagens:", error);
     }
+}
+
+// 14. View de veiculos
+async function fillVehicleSelects(vehicles) {
+    const mainSelect = document.getElementById('vPlate'); // seu select antigo
+    const closeSelect = document.getElementById('closeTripVehicle'); // novo select
+    
+    const options = vehicles.map(v => `<option value="${v.plate}">${v.plate} - ${v.model}</option>`).join('');
+    
+    if(mainSelect) mainSelect.innerHTML = options;
+    if(closeSelect) closeSelect.innerHTML = options;
 }
 
 // ==================================================================
