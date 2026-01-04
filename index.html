@@ -120,91 +120,134 @@
             </button>
         </div>
 
-        <div id="formFuel" class="space-y-4">
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                <div class="space-y-4">
-                    <div>
-                        <label class="text-xs font-bold text-slate-500 ml-1 uppercase">Veículo</label>
-                        <select id="gPlate" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"></select>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="text-xs font-bold text-slate-500 ml-1 uppercase">Data</label>
-                            <input type="date" id="gDate" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none">
-                        </div>
-                        <div>
-                            <label class="text-xs font-bold text-slate-500 ml-1 uppercase">KM Atual</label>
-                            <input type="number" id="gKm" placeholder="000000" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none">
-                        </div>
-                    </div>
-                    </div>
+        <div id="launch" class="tab-content hidden px-4">
+            <h2 class="text-xl font-bold text-slate-800 mb-6">Novo Registro</h2>
+    
+            <div class="flex gap-1 mb-6 bg-white p-1 rounded-xl shadow-sm border overflow-x-auto no-scrollbar">
+                <button id="btnLaunchFuel" onclick="toggleLaunchView('fuel')" class="flex-1 py-2 px-2 rounded-lg font-bold text-[11px] uppercase bg-blue-100 text-blue-700 transition-all whitespace-nowrap">
+                    Abastecimento
+                </button>
+                <button id="btnLaunchMaint" onclick="toggleLaunchView('maint')" class="flex-1 py-2 px-2 rounded-lg font-bold text-[11px] uppercase text-slate-500 transition-all whitespace-nowrap">
+                    Manutenção
+                </button>
+                <button id="btnLaunchTrip" onclick="toggleLaunchView('trip')" class="flex-1 py-2 px-2 rounded-lg font-bold text-[11px] uppercase text-slate-500 transition-all whitespace-nowrap">
+                    Finalizar Viagem
+                </button>
             </div>
-        </div>
 
-        <div id="formMaint" class="hidden space-y-4">
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                <div class="space-y-4">
-                    <div>
-                        <label class="text-xs font-bold text-slate-500 ml-1 uppercase">Veículo</label>
-                        <select id="mPlate" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-slate-800"></select>
+            <div id="formFuel" class="space-y-4">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 ml-1 uppercase">Veículo</label>
+                            <select id="gPlate" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500"></select>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-xs font-bold text-slate-500 ml-1 uppercase">Data</label>
+                                <input type="date" id="gDate" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none">
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-slate-500 ml-1 uppercase">KM Atual</label>
+                                <input type="number" id="gKm" placeholder="000000" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-xs font-bold text-slate-500 ml-1 uppercase">Litros</label>
+                                <input type="number" id="gLiters" placeholder="0.0" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none">
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-slate-500 ml-1 uppercase">Preço/L</label>
+                                <input type="number" id="gPrice" placeholder="R$ 0.00" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none">
+                            </div>
+                        </div>
+
+                        <div class="relative">
+                            <input type="file" id="gPhoto" accept="image/*" capture="environment" class="hidden" onchange="handlePhoto(this)">
+                            <label for="gPhoto" class="block w-full border-2 border-dashed border-slate-300 rounded-xl p-4 text-center text-slate-500 hover:bg-slate-50 cursor-pointer">
+                                <i class="ph-bold ph-camera text-2xl mb-1"></i><br>Anexar Comprovante
+                            </label>
+                            <div id="receiptPhoto" class="hidden absolute inset-0 bg-cover bg-center rounded-xl border-2 border-blue-500">
+                                <button onclick="removePhoto()" class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1"><i class="ph-bold ph-x"></i></button>
+                            </div>
+                        </div>
+
+                        <button onclick="saveFuelEntry()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-bold shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2">
+                            <i class="ph-bold ph-gas-pump"></i>
+                            Confirmar Abastecimento
+                        </button>
                     </div>
-                    
-                    <div class="grid grid-cols-2 gap-4">
+                </div>
+            </div>
+
+            <div id="formMaint" class="hidden space-y-4">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 ml-1 uppercase">Veículo</label>
+                            <select id="mPlate" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-slate-800"></select>
+                        </div>
+                        
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 ml-1 uppercase">Descrição do Serviço</label>
+                            <input type="text" id="mDesc" placeholder="Ex: Troca de Óleo" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none">
+                        </div>
+
                         <div>
                             <label class="text-xs font-bold text-slate-500 ml-1 uppercase">Data</label>
                             <input type="date" id="mDateTime" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none">
                         </div>
-                        <div>
-                            <label class="text-xs font-bold text-slate-500 ml-1 uppercase">KM Atual</label>
-                            <input type="number" id="mKmInitial" placeholder="000000" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none">
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-xs font-bold text-slate-500 ml-1 uppercase">Valor Total</label>
+                                <input type="number" id="mTotalValue" placeholder="R$ 0.00" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none">
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-slate-500 ml-1 uppercase">KM Atual</label>
+                                <input type="number" id="mKmInitial" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none">
+                            </div>
                         </div>
-                    </div>
 
-                    <div>
-                        <label class="text-xs font-bold text-slate-500 ml-1 uppercase">Descrição do Serviço</label>
-                        <input type="text" id="mDesc" placeholder="Ex: Troca de Óleo" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none">
+                        <button onclick="saveMaintenance()" class="w-full bg-slate-800 hover:bg-slate-900 text-white py-4 rounded-xl font-bold shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2">
+                            <i class="ph-bold ph-wrench"></i>
+                            Salvar Manutenção
+                        </button>
                     </div>
-
-                    <div>
-                        <label class="text-xs font-bold text-slate-500 ml-1 uppercase">Valor Total (R$)</label>
-                        <input type="number" id="mTotalValue" placeholder="R$ 0.00" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none">
-                    </div>
-
-                    <button onclick="saveMaintenance()" class="w-full bg-slate-800 hover:bg-slate-900 text-white py-4 rounded-xl font-bold shadow-lg flex items-center justify-center gap-2">
-                        <i class="ph-bold ph-wrench"></i> Salvar Manutenção
-                    </button>
                 </div>
             </div>
-        </div>
 
-        <div id="formTrip" class="hidden space-y-4">
-            <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                <div class="space-y-4">
-                    <div>
-                        <label class="text-xs font-bold text-slate-500 ml-1 uppercase">Veículo</label>
-                        <select id="closeTripVehicle" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-green-500"></select>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4">
+            <div id="formTrip" class="hidden space-y-4">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="space-y-4">
                         <div>
-                            <label class="text-xs font-bold text-slate-500 ml-1 uppercase">Data de Chegada</label>
-                            <input type="date" id="tripEndDate" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none">
+                            <label class="text-xs font-bold text-slate-500 ml-1 uppercase">Veículo</label>
+                            <select id="closeTripVehicle" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-green-500"></select>
                         </div>
+
                         <div>
-                            <label class="text-xs font-bold text-slate-500 ml-1 uppercase">KM Final</label>
+                            <label class="text-xs font-bold text-slate-500 ml-1 uppercase">Data</label>
+                            <input type="date" id="mDateTime" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none">
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 ml-1 uppercase">KM Final na Chegada</label>
                             <input type="number" id="closeTripKmFinal" placeholder="Ex: 105200" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none">
                         </div>
-                    </div>
 
-                    <div>
-                        <label class="text-xs font-bold text-slate-500 ml-1 uppercase">Total em Pedágios (R$)</label>
-                        <input type="number" id="closeTripToll" step="0.01" placeholder="0,00" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none">
+                        <div>
+                            <label class="text-xs font-bold text-slate-500 ml-1 uppercase">Total em Pedágios (R$)</label>
+                            <input type="number" id="closeTripToll" step="0.01" placeholder="0,00" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none">
+                        </div>
+                        
+                        <button onclick="submitCloseTrip()" class="w-full bg-green-600 text-white p-4 rounded-xl font-bold hover:bg-green-700 transition-all flex items-center justify-center gap-2">
+                            <i class="ph-bold ph-calculator"></i>
+                            Calcular e Finalizar
+                        </button>
                     </div>
-
-                    <button onclick="submitCloseTrip()" class="w-full bg-green-600 text-white p-4 rounded-xl font-bold hover:bg-green-700 transition-all flex items-center justify-center gap-2">
-                        <i class="ph-bold ph-calculator"></i> Calcular e Finalizar
-                    </button>
                 </div>
             </div>
         </div>
