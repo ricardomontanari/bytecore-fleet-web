@@ -62,6 +62,7 @@ function loadSystem() {
     loadGlobalStats();
     loadHistory(); // Carrega histórico na Home também
     loadSettings();
+    updateDashboardSummary();
 }
 
 // ==================================================================
@@ -164,6 +165,11 @@ function logout() {
 async function fillVehicleSelectors() {
     try {
         if (!currentUser || !currentUser.company_id) return;
+
+        const selectClose = document.getElementById('closeTripVehicle');
+        if (selectClose) {
+            selectClose.innerHTML = vehicles.map(v => `<option value="${v.plate}">${v.plate} - ${v.model}</option>`).join('');
+        }
 
         const r = await fetch(`${API_BASE_URL}/company/${currentUser.company_id}/vehicles`);
         if (!r.ok) throw new Error('Falha ao buscar veículos');
@@ -415,7 +421,7 @@ async function loadCompanyUsers() {
     } catch(e) { console.error(e); }
 }
 
-// 10. Dados de KM por Litro
+// 10. Dados de Valor por KM
 async function loadSettings() {
     if (!currentUser) return;
     try {
@@ -446,6 +452,69 @@ async function saveSettings() {
         }
     } catch (error) {
         alert("Erro ao salvar configuração");
+    }
+}
+
+// 11. Dados de Viagens
+async function submitCloseTrip() {
+    const plate = document.getElementById('closeTripVehicle').value;
+    const end_km = parseInt(document.getElementById('closeTripKmFinal').value);
+    const toll_cost = parseFloat(document.getElementById('closeTripToll').value || 0);
+
+    if (!plate || !end_km) {
+        return alert("Por favor, preencha a placa e o KM Final.");
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/trips/close`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                plate,
+                company_id: currentUser.company_id,
+                end_km,
+                toll_cost
+            })
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            alert(`Viagem Finalizada!\nLucro: R$ ${result.data.net_profit.toFixed(2)}\nMédia: ${result.data.average_consumption} KM/L`);
+            
+            // Limpa o formulário e atualiza o sistema
+            document.getElementById('closeTripKmFinal').value = '';
+            document.getElementById('closeTripToll').value = '';
+            loadSystem(); // Recarrega os dados e o dashboard
+        } else {
+            alert("Erro: " + result.error);
+        }
+    } catch (error) {
+        console.error("Erro ao fechar viagem:", error);
+        alert("Erro de conexão com o servidor.");
+    }
+}
+
+// 12. Dados do Dashboard
+async function updateDashboardSummary() {
+    if (!currentUser) return;
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/company/${currentUser.company_id}/dashboard-summary`);
+        const data = await response.json();
+
+        // Atualiza os elementos no HTML (IDs que criamos no passo anterior)
+        document.getElementById('monthlyProfitDisplay').innerText = 
+            new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(data.total_profit);
+        
+        document.getElementById('monthlyRevenueDisplay').innerText = 
+            new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(data.total_revenue);
+            
+        document.getElementById('monthlyExpensesDisplay').innerText = 
+            new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(data.total_expenses);
+
+    } catch (error) {
+        console.error("Erro ao atualizar dashboard:", error);
     }
 }
 
