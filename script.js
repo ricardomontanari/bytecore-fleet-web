@@ -78,6 +78,7 @@ async function loadSystem() {
         loadSettings();
         loadHistory();
         loadTripsHistory();
+        loadServicesList();
 
     } catch (error) {
         console.error("Erro na carga do sistema:", error);
@@ -184,7 +185,7 @@ function logout() {
 // FUNÇÕES DE DADOS (API)
 // ==================================================================
 
-// 1. Preencher Seletores de Veículos
+// Preencher Seletores de Veículos
 async function fillVehicleSelectors() {
     try {
         if (!currentUser || !currentUser.company_id) return;
@@ -211,7 +212,7 @@ async function fillVehicleSelectors() {
     }
 }
 
-// 2. Buscar KM Anterior (Automático)
+// Buscar KM Anterior (Automático)
 async function fetchLastKm(plate, targetId) {
     if (!plate || !currentUser) return;
     try {
@@ -224,7 +225,7 @@ async function fetchLastKm(plate, targetId) {
     } catch (e) { console.error("Erro KM:", e); }
 }
 
-// 3. Salvar Abastecimento
+// Salvar Abastecimento
 async function saveFuelEntry() {
     const plate = document.getElementById('gPlate').value;
     const km = document.getElementById('gKm').value;
@@ -288,7 +289,7 @@ async function saveFuelEntry() {
     }
 }
 
-// 4. Salvar Manutenção
+// Salvar Manutenção
 async function saveMaintenance() {
     const plate = document.getElementById('mPlate').value;
     const date = document.getElementById('mDateTime').value;
@@ -326,7 +327,7 @@ async function saveMaintenance() {
     } catch (e) { console.error(e); }
 }
 
-// 5. Carregar Histórico
+// Carregar Histórico
 async function loadHistory() {
     try {
         if (!currentUser) return;
@@ -365,7 +366,7 @@ async function loadHistory() {
     } catch (e) { console.error("Erro Histórico:", e); }
 }
 
-// 6. Carregar Frota
+// Carregar Frota
 async function loadFleetList() {
     try {
         if (!currentUser) return;
@@ -389,7 +390,7 @@ async function loadFleetList() {
     } catch (e) { console.error("Erro Frota:", e); }
 }
 
-// 7. Cadastrar Veículo
+// Cadastrar Veículo
 async function registerVehicle() {
     const plate = document.getElementById('vPlate').value;
     const model = document.getElementById('vModel').value;
@@ -418,7 +419,56 @@ async function registerVehicle() {
     } catch (e) { console.error(e); }
 }
 
-// 8. Dados da Empresa
+// Função para cadastrar novo serviço
+async function registerService() {
+    const name = document.getElementById('sName').value;
+    if (!name) return alert("Digite o nome do serviço!");
+
+    try {
+        const r = await fetch(`${API_BASE_URL}/services`, { // Endpoint sugerido
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                name: name,
+                company_id: currentUser.company_id 
+            })
+        });
+
+        if (r.ok) {
+            alert("Serviço cadastrado com sucesso!");
+            document.getElementById('sName').value = "";
+            toggleAccordion('formNewService');
+            loadServicesList(); // Atualiza os selects do sistema
+        }
+    } catch (err) {
+        console.error("Erro ao cadastrar serviço:", err);
+    }
+}
+
+// Função para carregar os serviços nos campos de SELECT
+async function loadServicesList() {
+    try {
+        const r = await fetch(`${API_BASE_URL}/services?company_id=${currentUser.company_id}`);
+        const services = await r.json();
+        
+        const mDescSelect = document.getElementById('mDesc');
+        if (!mDescSelect) return;
+
+        // Limpa e adiciona a opção padrão
+        mDescSelect.innerHTML = '<option value="">Selecione o serviço...</option>';
+        
+        services.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.name;
+            opt.textContent = s.name;
+            mDescSelect.appendChild(opt);
+        });
+    } catch (err) {
+        console.log("Erro ao carregar serviços:", err);
+    }
+}
+
+// Dados da Empresa
 async function loadCompanyData() {
     try {
         const res = await fetch(`${API_BASE_URL}/company/${currentUser.company_id}`);
@@ -430,7 +480,7 @@ async function loadCompanyData() {
     } catch(e) { console.error(e); }
 }
 
-// 9. Dados do Usuários
+// Dados do Usuários
 async function loadCompanyUsers() {
     try {
         const res = await fetch(`${API_BASE_URL}/company/${currentUser.company_id}/users`);
@@ -449,7 +499,7 @@ async function loadCompanyUsers() {
     } catch(e) { console.error(e); }
 }
 
-// 10. Dados de Valor por KM
+// Dados de Valor por KM
 async function loadSettings() {
     if (!currentUser) return;
     try {
@@ -483,7 +533,7 @@ async function saveSettings() {
     }
 }
 
-// 11. Dados de Viagens
+// Dados de Viagens
 async function submitCloseTrip() {
     const btn = event.currentTarget;
     const plate = document.getElementById('closeTripVehicle').value;
@@ -534,7 +584,7 @@ async function submitCloseTrip() {
     }
 }
 
-// 12. Dados do Dashboard
+// Dados do Dashboard
 async function updateDashboardSummary() {
     if (!currentUser) return;
     
@@ -560,7 +610,7 @@ async function updateDashboardSummary() {
     }
 }
 
-// 13. Dados do Histórico de Viagens
+// Dados do Histórico de Viagens
 async function loadTripsHistory() {
     if (!currentUser) return;
     const container = document.getElementById('tripsList');
@@ -609,7 +659,7 @@ async function loadTripsHistory() {
     }
 }
 
-// 14. Função Lançamentos
+// Função Lançamentos
 function toggleLaunchView(view) {
     // IDs das seções
     const sections = {
@@ -642,7 +692,7 @@ function toggleLaunchView(view) {
     }
 }
 
-// 15. Função Histórico
+// Função Histórico
 function toggleHistoryView(view) {
     const btnRecent = document.getElementById('btnShowRecent');
     const btnTrips = document.getElementById('btnShowTrips');
@@ -674,7 +724,7 @@ function toggleHistoryView(view) {
     }
 }
 
-// 16. Função Configurações
+// Função Configurações
 function toggleGestorView(view) {
     const sections = {
         cad: document.getElementById('secGestorCad'),
@@ -711,12 +761,13 @@ function toggleGestorView(view) {
     }
 }
 
-// 17. Função para abrir/fechar painéis (Accordion)
+// Função para abrir/fechar painéis (Accordion)
 function toggleAccordion(elementId) {
     const content = document.getElementById(elementId);
     // Mapeamento dos ícones para cada seção
     const iconMap = {
         'formNewVehicle': 'iconNewVehicle',
+        'formNewService': 'iconNewService',
         'listFleet': 'iconFleet',
         'listUsers': 'iconUsers'
     };

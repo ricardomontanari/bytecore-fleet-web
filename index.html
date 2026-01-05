@@ -194,14 +194,6 @@
                         <div>
                             <label class="text-xs font-bold text-slate-500 ml-1 uppercase">Descrição do Serviço</label>
                             <select id="mDesc" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-slate-800">
-                                <option value="">Selecione o serviço...</option>
-                                <option value="Troca de Óleo">Troca de Óleo</option>
-                                <option value="Filtros">Filtros (Óleo/Ar/Combustível)</option>
-                                <option value="Pneus/Alinhamento">Pneus / Alinhamento</option>
-                                <option value="Freios">Sistema de Freios</option>
-                                <option value="Suspensão">Suspensão</option>
-                                <option value="Elétrica">Parte Elétrica</option>
-                                <option value="Outros">Outros</option>
                             </select>
                         </div>
 
@@ -339,6 +331,33 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mt-4">
+                    <button onclick="toggleAccordion('formNewService')" class="w-full p-5 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center text-orange-600">
+                                <i class="ph-bold ph-wrench text-xl"></i>
+                            </div>
+                            <div class="text-left">
+                                <h3 class="font-bold text-slate-800 text-sm">Novo Tipo de Serviço</h3>
+                                <p class="text-[10px] text-slate-400 uppercase tracking-wider">Pressione para abrir</p>
+                            </div>
+                        </div>
+                        <i id="iconNewService" class="ph-bold ph-caret-down text-slate-400 transition-transform"></i>
+                    </button>
+
+                    <div id="formNewService" class="hidden p-6 pt-0 border-t border-slate-50 space-y-4">
+                        <div class="space-y-4 mt-4">
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-500 ml-1 uppercase">Nome do Serviço</label>
+                                <input id="sName" type="text" placeholder="Ex: Troca de Óleo, Pneus..." class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none">
+                            </div>
+                            <button onclick="registerService()" class="w-full bg-orange-600 text-white py-4 rounded-xl font-bold shadow-lg flex items-center justify-center gap-2">
+                                <i class="ph-bold ph-check-circle"></i> Salvar Serviço
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div id="secGestorFleet" class="hidden space-y-4">
@@ -395,7 +414,7 @@
             </button>
             <button onclick="switchTab('launch')" class="flex flex-col items-center text-gray-400 hover:text-blue-500 transition-colors">
                 <i class="ph-bold ph-plus-circle text-2xl mb-1"></i>
-                <span class="text-[10px]">Lançar</span>
+                <span class="text-[10px]">Lançamento</span>
             </button>
             <button onclick="switchTab('history')" class="flex flex-col items-center text-gray-400 hover:text-blue-500 transition-colors">
                 <i class="ph-bold ph-clock-counter-clockwise text-2xl mb-1"></i>
