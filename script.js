@@ -407,6 +407,9 @@ async function registerVehicle() {
         if (r.ok) {
             alert("Veículo criado!");
             document.getElementById('vPlate').value = "";
+            document.getElementById('vModel').value = "";
+            document.getElementById('vKm').value = "";
+            toggleAccordion('formNewVehicle');
             loadFleetList();
         } else {
             const err = await r.json();
@@ -705,6 +708,27 @@ function toggleGestorView(view) {
     if (view === 'fleet') {
         loadFleetList();
         loadCompanyUsers();
+    }
+}
+
+// 17. Função para abrir/fechar painéis (Accordion)
+function toggleAccordion(elementId) {
+    const content = document.getElementById(elementId);
+    // Mapeamento dos ícones para cada seção
+    const iconMap = {
+        'formNewVehicle': 'iconNewVehicle',
+        'listFleet': 'iconFleet',
+        'listUsers': 'iconUsers'
+    };
+    
+    const icon = document.getElementById(iconMap[elementId]);
+    
+    if (content.classList.contains('hidden')) {
+        content.classList.remove('hidden');
+        if (icon) icon.style.transform = 'rotate(180deg)';
+    } else {
+        content.classList.add('hidden');
+        if (icon) icon.style.transform = 'rotate(0deg)';
     }
 }
 

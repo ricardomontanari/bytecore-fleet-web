@@ -306,63 +306,81 @@
             </div>
 
             <div id="secGestorCad" class="space-y-4">
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                    <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
-                        <i class="ph-bold ph-plus-circle text-blue-600"></i> Cadastrar Novo Veículo
-                    </h3>
-                    <div class="space-y-4">
-                        <div>
-                            <label class="text-xs font-bold text-slate-500 ml-1 uppercase">Placa</label>
-                            <input id="vPlate" type="text" placeholder="ABC-1234" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none uppercase">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <button onclick="toggleAccordion('formNewVehicle')" class="w-full p-5 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center text-blue-600">
+                                <i class="ph-bold ph-plus-circle text-xl"></i>
+                            </div>
+                            <div class="text-left">
+                                <h3 class="font-bold text-slate-800 text-sm">Novo Veículo</h3>
+                                <p class="text-[10px] text-slate-400 uppercase tracking-wider">Pressione para abrir</p>
+                            </div>
                         </div>
-                        <div>
-                            <label class="text-xs font-bold text-slate-500 ml-1 uppercase">Modelo</label>
-                            <input id="vModel" type="text" placeholder="Ex: Fiat Strada" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none">
+                        <i id="iconNewVehicle" class="ph-bold ph-caret-down text-slate-400 transition-transform"></i>
+                    </button>
+                    <div id="formNewVehicle" class="hidden p-6 pt-0 border-t border-slate-50 space-y-4">
+                        <div class="space-y-4 mt-4">
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-500 ml-1 uppercase">Placa</label>
+                                <input id="vPlate" type="text" placeholder="ABC-1234" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none uppercase font-bold text-slate-700">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-500 ml-1 uppercase">Modelo</label>
+                                <input id="vModel" type="text" placeholder="Ex: VW Gol" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none">
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-500 ml-1 uppercase">KM Inicial</label>
+                                <input id="vKm" type="number" placeholder="0" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none">
+                            </div>
+                            <button onclick="registerVehicle()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold shadow-lg flex items-center justify-center gap-2">
+                                <i class="ph-bold ph-check-circle"></i> Salvar Veículo
+                            </button>
                         </div>
-                        <div>
-                            <label class="text-xs font-bold text-slate-500 ml-1 uppercase">KM Inicial</label>
-                            <input id="vKm" type="number" placeholder="0" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none">
-                        </div>
-                        <button onclick="registerVehicle()" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold shadow-lg active:scale-95 transition-all">
-                            Salvar Veículo
-                        </button>
                     </div>
                 </div>
             </div>
 
-            <div id="secGestorFleet" class="hidden space-y-6">
-                <div>
-                    <h3 class="font-bold text-slate-800 mb-3 ml-1 flex items-center gap-2">
-                        <i class="ph-bold ph-truck text-green-600"></i> Frota Atual
-                    </h3>
-                    <div id="fleetList" class="space-y-3">
+            <div id="secGestorFleet" class="hidden space-y-4">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <button onclick="toggleAccordion('listFleet')" class="w-full p-5 flex items-center justify-between hover:bg-slate-50">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center text-green-600">
+                                <i class="ph-bold ph-truck text-xl"></i>
+                            </div>
+                            <h3 class="font-bold text-slate-800 text-sm">Ver Veículos</h3>
                         </div>
+                        <i id="iconFleet" class="ph-bold ph-caret-down text-slate-400 transition-transform"></i>
+                    </button>
+                    <div id="listFleet" class="hidden p-4 border-t border-slate-50 bg-slate-50/50">
+                        <div id="fleetList" class="space-y-3"></div>
+                    </div>
                 </div>
-                <div>
-                    <h3 class="font-bold text-slate-800 mb-3 ml-1 flex items-center gap-2">
-                        <i class="ph-bold ph-users text-purple-600"></i> Motoristas / Equipe
-                    </h3>
-                    <div id="usersList" class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <button onclick="toggleAccordion('listUsers')" class="w-full p-5 flex items-center justify-between hover:bg-slate-50">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center text-purple-600">
+                                <i class="ph-bold ph-users text-xl"></i>
+                            </div>
+                            <h3 class="font-bold text-slate-800 text-sm">Ver Motoristas</h3>
                         </div>
+                        <i id="iconUsers" class="ph-bold ph-caret-down text-slate-400 transition-transform"></i>
+                    </button>
+                    <div id="listUsers" class="hidden p-4 border-t border-slate-50">
+                        <div id="usersList" class="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm"></div>
+                    </div>
                 </div>
             </div>
 
             <div id="secGestorParams" class="hidden space-y-4">
                 <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                     <h3 class="font-bold text-slate-800 mb-4 flex items-center gap-2">
-                        <i class="ph-bold ph-wrench text-orange-600"></i> Configuração de Valores
+                        <i class="ph-bold ph-wrench text-orange-600"></i> Valor por KM Rodado
                     </h3>
-                    <div class="space-y-4">
-                        <div>
-                            <label class="text-xs font-bold text-slate-500 ml-1 uppercase">Valor Recebido por KM Rodado (R$)</label>
-                            <div class="flex gap-2">
-                                <input type="number" id="inputPerKmValue" step="0.01" class="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500" placeholder="1.50">
-                                <button onclick="saveSettings()" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700 transition-all">
-                                    Salvar
-                                </button>
-                            </div>
-                        </div>
-                        <p class="text-[10px] text-slate-400 leading-tight">Este valor será utilizado para calcular a receita bruta e o lucro das viagens finalizadas no sistema.</p>
+                    <div class="flex gap-2">
+                        <input type="number" id="inputPerKmValue" step="0.01" class="flex-1 p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none" placeholder="1.50">
+                        <button onclick="saveSettings()" class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold">Salvar</button>
                     </div>
                 </div>
             </div>
