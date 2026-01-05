@@ -2,7 +2,6 @@
 // CONFIGURAÇÃO GLOBAL
 // ==================================================================
 const API_BASE_URL = 'https://bytecore-fleet-api.onrender.com';
-const cors = require('cors');
 let currentUser = null;
 let expenseChart = null;
 let base64Photo = null; // Armazena a foto tirada/carregada
@@ -11,15 +10,12 @@ let base64Photo = null; // Armazena a foto tirada/carregada
 // INICIALIZAÇÃO DO SISTEMA
 // ==================================================================
 window.onload = function() {
-    // 1. Service Worker (PWA)
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('sw.js').catch(err => console.log('SW falhou:', err));
     }
 
-    // 2. Configura Máscaras de Input
     setupInputMasks();
 
-    // 3. Verifica Login
     const savedUser = localStorage.getItem('bytecore_user');
     if (savedUser) {
         currentUser = JSON.parse(savedUser);
@@ -28,34 +24,14 @@ window.onload = function() {
         document.getElementById('loginScreen').classList.remove('hidden');
     }
 
-    // 4. PREENCHER DATA ATUAL (CORRIGIDO PARA HORÁRIO LOCAL)
     const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const todayString = `${year}-${month}-${day}`;
+    const todayString = now.toISOString().split('T')[0];
 
-    // Preenche Abastecimento
-    const fuelDate = document.getElementById('gDate');
-    if (fuelDate) fuelDate.value = todayString;
+    // Preenche as datas em todos os campos padronizados
+    if (document.getElementById('gDate')) document.getElementById('gDate').value = todayString;
+    if (document.getElementById('mDateTime')) document.getElementById('mDateTime').value = todayString;
+    if (document.getElementById('tripEndDate')) document.getElementById('tripEndDate').value = todayString;
 
-    // Preenche Manutenção
-    const maintDate = document.getElementById('mDateTime');
-    if (maintDate) maintDate.value = todayString;
-
-    // Preenche Finalizar Viagem
-    const tripDate = document.getElementById('tripEndDate');
-    if (tripDate) tripDate.value = todayString;
-
-    // 5. CONFIGURAÇÃO DE LISTENERS DE PLACA
-    
-    // Para Abastecimento: NÃO preenchemos o KM (gKm) automaticamente, conforme solicitado.
-    // O listener abaixo serve apenas se você quiser fazer alguma outra validação futura.
-    const gPlate = document.getElementById('gPlate');
-    // if (gPlate) gPlate.addEventListener('change', (e) => fetchLastKm(e.target.value, 'gKm')); // <--- LINHA REMOVIDA
-    
-    // Para Manutenção: Mantemos o preenchimento automático (mKmInitial) pois geralmente é útil,
-    // mas se quiser tirar também, basta comentar a linha abaixo.
     const mPlate = document.getElementById('mPlate');
     if (mPlate) mPlate.addEventListener('change', (e) => fetchLastKm(e.target.value, 'mKmInitial'));
 };
@@ -80,13 +56,6 @@ async function loadSystem() {
         console.error("Erro na carga do sistema:", error);
     }
 }
-
-// Configuração para permitir o seu domínio do GitHub
-app.use(cors({
-    origin: 'https://ricardomontanari.github.io',
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
 
 // ==================================================================
 // NAVEGAÇÃO (ABAS)
@@ -567,7 +536,8 @@ async function submitCloseTrip() {
                 plate,
                 company_id: currentUser.company_id,
                 end_km: parseInt(end_km),
-                toll_cost: parseFloat(toll_cost || 0)
+                toll_cost: parseFloat(toll_cost || 0),
+                date: tripDate
             })
         });
 
