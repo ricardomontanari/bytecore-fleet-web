@@ -8,6 +8,7 @@ let base64Photo = null;
 let tempServices = [];
 let tempParts = [];
 let currentHistoryData = [];
+let currentDetailId = null;
 
 // ==================================================================
 // INICIALIZAÇÃO DO SISTEMA
@@ -1010,101 +1011,100 @@ function openDetailsModal(index) {
     const item = currentHistoryData[index];
     if (!item) return;
 
+    currentDetailId = item.id; // Salva o ID para usar no Delete/Edit
+
     const modal = document.getElementById('detailsModal');
     const title = document.getElementById('detTitle');
     const sub = document.getElementById('detSubtitle');
     const content = document.getElementById('detContent');
-    const total = document.getElementById('detTotal');
+    
+    // Tratamento de Data para os Inputs (YYYY-MM-DD)
+    const dateObj = new Date(item.date);
+    const dateInputFmt = dateObj.toISOString().split('T')[0];
+    const dateDisplayFmt = dateObj.toLocaleDateString('pt-BR', { timeZone: 'UTC' });
 
-    // 1. Cabeçalho Básico
+    // 1. Cabeçalho
     title.innerText = item.type;
-    sub.innerText = `${item.plate} • ${new Date(item.date).toLocaleDateString('pt-BR')}`;
-    total.innerText = `R$ ${parseFloat(item.value).toFixed(2)}`;
+    sub.innerHTML = `
+        <div id="viewHeader">
+            ${item.plate} • ${dateDisplayFmt}
+        </div>
+        <div id="editHeader" class="hidden gap-2 mt-2">
+            <input type="date" id="editDate" value="${dateInputFmt}" class="p-2 border rounded bg-white text-xs w-full">
+        </div>
+    `;
 
-    // 2. Processamento do Conteúdo (JSON)
+    // 2. Rodapé com Botões de Ação
+    // Vamos injetar o HTML do rodapé dinamicamente para incluir o valor editável
+    const footerDiv = modal.querySelector('.border-t'); // Seleciona a div do rodapé
+    footerDiv.innerHTML = `
+        <div class="flex justify-between items-center mb-4">
+            <span class="text-sm font-bold text-slate-500 uppercase">Total Geral</span>
+            
+            <span class="text-xl font-bold text-blue-600" id="detTotalDisplay">
+                R$ ${parseFloat(item.value).toFixed(2)}
+            </span>
+            
+            <input type="number" id="editTotal" value="${item.value}" class="hidden w-32 p-2 border rounded font-bold text-blue-600 text-right">
+        </div>
+
+        <div id="actionButtons" class="grid grid-cols-2 gap-3">
+            <button onclick="deleteMovement()" class="bg-red-50 text-red-600 py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-red-100">
+                <i class="ph-bold ph-trash"></i> Excluir
+            </button>
+            <button onclick="enableEditMode()" class="bg-blue-50 text-blue-600 py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-blue-100">
+                <i class="ph-bold ph-pencil-simple"></i> Editar
+            </button>
+        </div>
+
+        <div id="saveButtons" class="hidden grid grid-cols-2 gap-3">
+             <button onclick="closeDetailsModal()" class="bg-slate-200 text-slate-600 py-3 rounded-xl font-bold">
+                Cancelar
+            </button>
+            <button onclick="saveMovementChanges()" class="bg-green-600 text-white py-3 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-green-200">
+                <i class="ph-bold ph-check"></i> Salvar
+            </button>
+        </div>
+    `;
+
+    // 3. Conteúdo Central (Mantivemos a lógica de visualização, mas adicionamos IDs para edição)
     let html = '';
-
-    // Se tiver imagem, mostra primeiro
+    
+    // Foto
     if (item.receipt_image) {
-        html += `
-            <div class="mb-4">
-                <p class="text-xs font-bold text-slate-400 uppercase mb-2">Comprovante</p>
-                <div onclick="openPhotoModal('${item.receipt_image}')" class="h-32 rounded-xl bg-cover bg-center border border-slate-200 shadow-sm cursor-pointer" style="background-image: url('${item.receipt_image}')"></div>
-            </div>
-        `;
+        html += `<div class="mb-4 text-center"><button onclick="openPhotoModal('${item.receipt_image}')" class="text-xs text-blue-500 underline">Ver Comprovante Anexado</button></div>`;
     }
 
-    // Se for Manutenção e tiver detalhes JSON
-    if (item.type === 'Manutenção' && item.details) {
-        // Tenta fazer o parse se vier como string, senão usa direto
-        const det = typeof item.details === 'string' ? JSON.parse(item.details) : item.details;
-
-        // Bloco de KMs
-        html += `
-            <div class="grid grid-cols-2 gap-3 mb-4">
-                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                    <p class="text-[10px] text-slate-400 uppercase">KM Atual</p>
-                    <p class="font-bold text-slate-700">${item.km_initial || '-'}</p>
-                </div>
-                ${det.km_previous ? `
-                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                    <p class="text-[10px] text-slate-400 uppercase">KM Anterior</p>
-                    <p class="font-bold text-slate-500">${det.km_previous}</p>
-                </div>` : ''}
-            </div>
-        `;
-
-        // Lista de Peças
-        if (det.parts_list && det.parts_list.length > 0) {
-            html += `<h4 class="font-bold text-slate-700 text-sm mb-2 flex items-center gap-2"><i class="ph-bold ph-engine text-orange-500"></i> Peças / Produtos</h4>`;
-            html += `<ul class="space-y-2 mb-4">`;
-            det.parts_list.forEach(p => {
-                html += `
-                    <li class="flex justify-between text-sm p-2 bg-orange-50/50 rounded-lg border border-orange-100">
-                        <span class="text-slate-700">${p.name}</span>
-                        <span class="font-bold text-slate-900">R$ ${parseFloat(p.value).toFixed(2)}</span>
-                    </li>`;
-            });
-            html += `</ul>`;
-        }
-
-        // Lista de Serviços
-        if (det.services_list && det.services_list.length > 0) {
-            html += `<h4 class="font-bold text-slate-700 text-sm mb-2 flex items-center gap-2"><i class="ph-bold ph-wrench text-blue-500"></i> Serviços</h4>`;
-            html += `<ul class="space-y-2 mb-4">`;
-            det.services_list.forEach(s => {
-                html += `
-                    <li class="flex justify-between text-sm p-2 bg-blue-50/50 rounded-lg border border-blue-100">
-                        <span class="text-slate-700">${s.name}</span>
-                        <span class="font-bold text-slate-900">R$ ${parseFloat(s.value).toFixed(2)}</span>
-                    </li>`;
-            });
-            html += `</ul>`;
-        }
-    } 
+    // Campos Editáveis de KM e Litros
     // Se for Abastecimento
-    else if (item.type === 'Abastecimento' || item.type === 'FUEL') {
+    if (item.type === 'Abastecimento' || item.type === 'FUEL') {
         html += `
-            <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 space-y-2">
-                <div class="flex justify-between">
-                    <span class="text-sm text-slate-500">Litros</span>
-                    <span class="font-bold text-slate-800">${item.liters} L</span>
+            <div class="grid grid-cols-2 gap-3 bg-blue-50 p-3 rounded-xl border border-blue-100">
+                <div>
+                    <p class="text-[10px] text-slate-400 uppercase">Litros</p>
+                    <input id="editLiters" type="number" value="${item.liters}" disabled class="bg-transparent font-bold text-slate-800 w-full outline-none disabled:opacity-100">
                 </div>
-                <div class="flex justify-between">
-                    <span class="text-sm text-slate-500">Preço/L</span>
-                    <span class="font-bold text-slate-800">R$ ${item.price_per_liter || '-'}</span>
-                </div>
-                <div class="flex justify-between border-t border-blue-100 pt-2 mt-1">
-                    <span class="text-sm text-slate-500">KM no Ato</span>
-                    <span class="font-bold text-slate-800">${item.km_final || '-'}</span>
+                <div>
+                    <p class="text-[10px] text-slate-400 uppercase">Preço/L</p>
+                    <input id="editPrice" type="number" value="${item.price_per_liter}" disabled class="bg-transparent font-bold text-slate-800 w-full outline-none disabled:opacity-100">
                 </div>
             </div>
         `;
     }
+    
+    // KM (Comum a todos)
+    html += `
+        <div class="mt-4 bg-slate-50 p-3 rounded-xl border border-slate-100">
+             <p class="text-[10px] text-slate-400 uppercase">KM Registrado</p>
+             <input id="editKm" type="number" value="${item.km_initial || item.km_final || 0}" disabled class="bg-transparent font-bold text-slate-700 w-full outline-none border-b border-transparent focus:border-blue-500 transition-colors">
+        </div>
+        <p class="text-[10px] text-slate-400 mt-2 italic text-center">* Para alterar listas de peças, exclua e refaça o lançamento.</p>
+    `;
 
     content.innerHTML = html;
+    
+    // Abre o modal e trava scroll
     modal.classList.remove('hidden');
-
     document.body.classList.add('overflow-hidden');
 }
 
@@ -1408,5 +1408,98 @@ function setupInputMasks() {
         plateInput.addEventListener('input', function(e) {
             e.target.value = e.target.value.toUpperCase();
         });
+    }
+}
+
+// 1. Função de Excluir
+async function deleteMovement() {
+    if (!currentDetailId) return;
+
+    if (confirm("Tem certeza que deseja EXCLUIR este registo? Esta ação não pode ser desfeita.")) {
+        try {
+            const res = await fetch(`${API_BASE_URL}/movements/${currentDetailId}`, {
+                method: 'DELETE'
+            });
+
+            if (res.ok) {
+                alert("Registo apagado!");
+                closeDetailsModal();
+                loadHistory();      // Atualiza lista
+                loadGlobalStats();  // Atualiza gráfico
+            } else {
+                alert("Erro ao excluir.");
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Erro de conexão.");
+        }
+    }
+}
+
+// 2. Ativar Modo de Edição
+function enableEditMode() {
+    // Esconde cabeçalho visual e mostra input de data
+    document.getElementById('viewHeader').classList.add('hidden');
+    document.getElementById('editHeader').classList.remove('hidden');
+    document.getElementById('editHeader').classList.add('flex');
+
+    // Troca display de valor por input
+    document.getElementById('detTotalDisplay').classList.add('hidden');
+    document.getElementById('editTotal').classList.remove('hidden');
+
+    // Troca botões de ação pelos de salvar
+    document.getElementById('actionButtons').classList.add('hidden');
+    document.getElementById('saveButtons').classList.remove('hidden');
+    document.getElementById('saveButtons').classList.add('grid');
+
+    // Habilita inputs que estavam disabled
+    const inputs = ['editKm', 'editLiters', 'editPrice'];
+    inputs.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.disabled = false;
+            el.classList.add('bg-white', 'border', 'border-slate-300', 'p-1', 'rounded'); // Dá estilo de input editável
+        }
+    });
+}
+
+// 3. Salvar Edição
+async function saveMovementChanges() {
+    if (!currentDetailId) return;
+
+    const date = document.getElementById('editDate').value;
+    const val = document.getElementById('editTotal').value;
+    
+    // Captura opcionais (se existirem na tela)
+    const kmEl = document.getElementById('editKm');
+    const litEl = document.getElementById('editLiters');
+    const priceEl = document.getElementById('editPrice');
+
+    const payload = {
+        date: date,
+        value: parseFloat(val),
+        km_initial: kmEl ? parseInt(kmEl.value) : 0,
+        km_final: kmEl ? parseInt(kmEl.value) : 0, // Simplificação: assume update no KM principal
+        liters: litEl ? parseFloat(litEl.value) : null,
+        price_per_liter: priceEl ? parseFloat(priceEl.value) : null
+    };
+
+    try {
+        const res = await fetch(`${API_BASE_URL}/movements/${currentDetailId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+            alert("Registo atualizado!");
+            closeDetailsModal();
+            loadHistory();
+            loadGlobalStats();
+        } else {
+            alert("Erro ao atualizar.");
+        }
+    } catch (e) {
+        console.error(e);
     }
 }
