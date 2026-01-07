@@ -15,6 +15,7 @@ window.onload = function() {
     }
 
     setupInputMasks();
+    setupFuelCalculation();
 
     const savedUser = localStorage.getItem('bytecore_user');
     if (savedUser) {
@@ -782,6 +783,30 @@ function toggleAccordion(elementId) {
     } else {
         content.classList.add('hidden');
         if (icon) icon.style.transform = 'rotate(0deg)';
+    }
+}
+
+// Função para calcular total do abastecimento em tempo real
+function setupFuelCalculation() {
+    const litersInput = document.getElementById('gLiters');
+    const priceInput = document.getElementById('gPrice');
+    const totalInput = document.getElementById('gTotalCalc');
+
+    function calculate() {
+        const liters = parseFloat(litersInput.value) || 0;
+        const price = parseFloat(priceInput.value) || 0;
+        
+        // Calcula e fixa em 2 casas decimais
+        const total = liters * price;
+        
+        // Formata para o padrão brasileiro (vírgula)
+        totalInput.value = total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    // Adiciona o evento de digitação nos dois campos
+    if (litersInput && priceInput) {
+        litersInput.addEventListener('input', calculate);
+        priceInput.addEventListener('input', calculate);
     }
 }
 

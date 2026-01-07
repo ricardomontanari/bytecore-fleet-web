@@ -181,6 +181,14 @@
                             </div>
                         </div>
 
+                        <div class="mt-2 mb-2">
+                            <label class="text-[10px] font-bold text-slate-500 ml-1 uppercase">Valor Total</label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-2.5 text-slate-400 font-bold text-sm">R$</span>
+                                <input type="text" id="gTotalCalc" readonly value="0,00" class="w-full p-2.5 pl-10 bg-slate-100 border border-slate-200 rounded-xl outline-none font-bold text-slate-700">
+                            </div>
+                        </div>
+
                         <div class="relative">
                             <input type="file" id="gPhoto" accept="image/*" capture="environment" class="hidden" onchange="handlePhoto(this)">
                             <label for="gPhoto" class="block w-full border-2 border-dashed border-slate-300 rounded-xl p-4 text-center text-slate-500 hover:bg-slate-50 cursor-pointer">
