@@ -7,6 +7,7 @@ let expenseChart = null;
 let base64Photo = null;
 let tempServices = [];
 let tempParts = [];
+let currentHistoryData = [];
 
 // ==================================================================
 // INICIALIZAÇÃO DO SISTEMA
@@ -338,53 +339,54 @@ async function loadHistory() {
         if (!currentUser) return;
         const res = await fetch(`${API_BASE_URL}/company/${currentUser.company_id}/movements`);
         const movements = await res.json();
-        const container = document.getElementById('activityHistory');
 
+        // SALVA NA GLOBAL PARA O MODAL USAR
+        currentHistoryData = movements;
+
+        const container = document.getElementById('activityHistory');
         if (!container) return;
+        
         if (movements.length === 0) {
             container.innerHTML = '<p class="text-center text-gray-400 py-8">Sem atividades recentes.</p>';
             return;
         }
 
-        container.innerHTML = movements.map(m => {
+        // Gera o HTML
+        container.innerHTML = movements.map((m, index) => {
             const isFuel = m.type === 'Abastecimento' || m.type === 'FUEL';
-            // Ícone visual
             const icon = isFuel ? 'ph-gas-pump' : 'ph-wrench';
             const colorBg = isFuel ? 'bg-orange-50 text-orange-600' : 'bg-blue-50 text-blue-600';
             
-            // Formatação da Data (DD/MM/YYYY) para ficar mais curta e bonita
-            const dateObj = new Date(m.date);
-            // Ajuste de fuso simples para visualização correta
-            const userTimezoneOffset = dateObj.getTimezoneOffset() * 60000;
-            const dateAdjusted = new Date(dateObj.getTime() + userTimezoneOffset);
-            const dateFmt = dateAdjusted.toLocaleDateString('pt-BR');
+            // Tratamento do nome do serviço (se tiver details, usa o tipo específico)
+            let serviceName = m.type;
+            if (m.details) {
+                const det = typeof m.details === 'string' ? JSON.parse(m.details) : m.details;
+                if (det.service_type) serviceName = det.service_type;
+            }
+
+            const dateFmt = new Date(m.date).toLocaleDateString('pt-BR', { timeZone: 'UTC' });
 
             return `
-            <div class="flex items-start justify-between p-4 border-b border-gray-50 last:border-0 hover:bg-slate-50 transition-colors">
+            <div onclick="openDetailsModal(${index})" class="cursor-pointer flex items-start justify-between p-4 border-b border-gray-50 last:border-0 hover:bg-slate-50 transition-colors active:bg-slate-100">
                 <div class="flex items-start gap-3">
                     <div class="w-10 h-10 ${colorBg} rounded-lg flex items-center justify-center shrink-0 mt-1">
                         <i class="ph-fill ${icon} text-xl"></i>
                     </div>
-                    
                     <div class="flex flex-col">
                         <span class="font-bold text-slate-800 text-sm">${m.plate}</span>
-                        <span class="text-xs text-slate-600 font-medium mt-0.5">${m.type}</span>
+                        <span class="text-xs text-slate-600 font-medium mt-0.5">${serviceName}</span>
                         <span class="text-[10px] text-slate-400 mt-0.5 flex items-center gap-1">
                             <i class="ph-bold ph-calendar-blank"></i> ${dateFmt}
                         </span>
                     </div>
                 </div>
-
                 <div class="flex flex-col items-end gap-1">
                     <span class="font-bold text-slate-800 text-sm whitespace-nowrap">
                         R$ ${parseFloat(m.value).toFixed(2)}
                     </span>
-                    
-                    ${m.receipt_image ? `
-                        <button onclick="openPhotoModal('${m.receipt_image}')" class="flex items-center gap-1 text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded-md font-bold hover:bg-blue-100 transition-colors">
-                            <i class="ph-fill ph-image"></i> Ver
-                        </button>
-                    ` : ''}
+                    <span class="text-[10px] text-blue-500 font-bold bg-blue-50 px-2 py-1 rounded-md">
+                        Ver Detalhes
+                    </span>
                 </div>
             </div>`;
         }).join('');
@@ -1001,6 +1003,111 @@ async function fetchLastOilChangeData() {
     } catch (error) {
         console.error("Erro ao buscar histórico de óleo", error);
     }
+}
+
+// Função para abrir o modal e preencher os dados
+function openDetailsModal(index) {
+    const item = currentHistoryData[index];
+    if (!item) return;
+
+    const modal = document.getElementById('detailsModal');
+    const title = document.getElementById('detTitle');
+    const sub = document.getElementById('detSubtitle');
+    const content = document.getElementById('detContent');
+    const total = document.getElementById('detTotal');
+
+    // 1. Cabeçalho Básico
+    title.innerText = item.type;
+    sub.innerText = `${item.plate} • ${new Date(item.date).toLocaleDateString('pt-BR')}`;
+    total.innerText = `R$ ${parseFloat(item.value).toFixed(2)}`;
+
+    // 2. Processamento do Conteúdo (JSON)
+    let html = '';
+
+    // Se tiver imagem, mostra primeiro
+    if (item.receipt_image) {
+        html += `
+            <div class="mb-4">
+                <p class="text-xs font-bold text-slate-400 uppercase mb-2">Comprovante</p>
+                <div onclick="openPhotoModal('${item.receipt_image}')" class="h-32 rounded-xl bg-cover bg-center border border-slate-200 shadow-sm cursor-pointer" style="background-image: url('${item.receipt_image}')"></div>
+            </div>
+        `;
+    }
+
+    // Se for Manutenção e tiver detalhes JSON
+    if (item.type === 'Manutenção' && item.details) {
+        // Tenta fazer o parse se vier como string, senão usa direto
+        const det = typeof item.details === 'string' ? JSON.parse(item.details) : item.details;
+
+        // Bloco de KMs
+        html += `
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <p class="text-[10px] text-slate-400 uppercase">KM Atual</p>
+                    <p class="font-bold text-slate-700">${item.km_initial || '-'}</p>
+                </div>
+                ${det.km_previous ? `
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                    <p class="text-[10px] text-slate-400 uppercase">KM Anterior</p>
+                    <p class="font-bold text-slate-500">${det.km_previous}</p>
+                </div>` : ''}
+            </div>
+        `;
+
+        // Lista de Peças
+        if (det.parts_list && det.parts_list.length > 0) {
+            html += `<h4 class="font-bold text-slate-700 text-sm mb-2 flex items-center gap-2"><i class="ph-bold ph-engine text-orange-500"></i> Peças / Produtos</h4>`;
+            html += `<ul class="space-y-2 mb-4">`;
+            det.parts_list.forEach(p => {
+                html += `
+                    <li class="flex justify-between text-sm p-2 bg-orange-50/50 rounded-lg border border-orange-100">
+                        <span class="text-slate-700">${p.name}</span>
+                        <span class="font-bold text-slate-900">R$ ${parseFloat(p.value).toFixed(2)}</span>
+                    </li>`;
+            });
+            html += `</ul>`;
+        }
+
+        // Lista de Serviços
+        if (det.services_list && det.services_list.length > 0) {
+            html += `<h4 class="font-bold text-slate-700 text-sm mb-2 flex items-center gap-2"><i class="ph-bold ph-wrench text-blue-500"></i> Serviços</h4>`;
+            html += `<ul class="space-y-2 mb-4">`;
+            det.services_list.forEach(s => {
+                html += `
+                    <li class="flex justify-between text-sm p-2 bg-blue-50/50 rounded-lg border border-blue-100">
+                        <span class="text-slate-700">${s.name}</span>
+                        <span class="font-bold text-slate-900">R$ ${parseFloat(s.value).toFixed(2)}</span>
+                    </li>`;
+            });
+            html += `</ul>`;
+        }
+    } 
+    // Se for Abastecimento
+    else if (item.type === 'Abastecimento' || item.type === 'FUEL') {
+        html += `
+            <div class="bg-blue-50 p-4 rounded-xl border border-blue-100 space-y-2">
+                <div class="flex justify-between">
+                    <span class="text-sm text-slate-500">Litros</span>
+                    <span class="font-bold text-slate-800">${item.liters} L</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-sm text-slate-500">Preço/L</span>
+                    <span class="font-bold text-slate-800">R$ ${item.price_per_liter || '-'}</span>
+                </div>
+                <div class="flex justify-between border-t border-blue-100 pt-2 mt-1">
+                    <span class="text-sm text-slate-500">KM no Ato</span>
+                    <span class="font-bold text-slate-800">${item.km_final || '-'}</span>
+                </div>
+            </div>
+        `;
+    }
+
+    content.innerHTML = html;
+    modal.classList.remove('hidden');
+}
+
+function closeDetailsModal() {
+    document.getElementById('detailsModal').classList.add('hidden');
 }
 
 // ==================================================================
