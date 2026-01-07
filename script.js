@@ -4,7 +4,9 @@
 const API_BASE_URL = 'https://bytecore-fleet-api.onrender.com';
 let currentUser = null;
 let expenseChart = null;
-let base64Photo = null; // Armazena a foto tirada/carregada
+let base64Photo = null;
+let tempServices = [];
+let tempParts = [];
 
 // ==================================================================
 // INICIALIZAÇÃO DO SISTEMA
@@ -265,23 +267,36 @@ async function saveFuelEntry() {
 // Salvar Manutenção
 async function saveMaintenance() {
     const plate = document.getElementById('mPlate').value;
+    const type = document.getElementById('mDesc').value; // Agora é um Select
     const date = document.getElementById('mDateTime').value;
     const km = document.getElementById('mKmInitial').value;
     const total = document.getElementById('mTotalValue').value;
-    const desc = document.getElementById('mDesc').value;
+    const kmPrev = document.getElementById('mKmPrev').value; // Específico de óleo
 
-    if (!plate || !total || !date) return alert("Preencha os campos obrigatórios.");
+    if (!plate || !total || !date || !type) return alert("Preencha os campos obrigatórios.");
+
+    // Monta o objeto JSON de detalhes
+    const details = {
+        service_type: type,
+        km_previous: kmPrev || null, // Salva se tiver
+        services_list: tempServices, // Array de serviços
+        parts_list: tempParts,       // Array de peças
+        services_total: tempServices.reduce((a, b) => a + b.value, 0),
+        parts_total: tempParts.reduce((a, b) => a + b.value, 0)
+    };
 
     const payload = {
         id: Date.now().toString(),
         plate,
-        type: 'Manutenção',
+        type: 'Manutenção', // Tipo genérico no banco
         value: parseFloat(total),
         date,
         km_initial: parseInt(km),
-        parts_used: desc,
+        // O campo parts_used antigo agora pode ser uma string resumo ou ficar vazio
+        parts_used: `${type} - ${tempParts.length} peças`, 
         company_id: currentUser.company_id,
-        receipt_image: base64Photo
+        receipt_image: base64Photo,
+        details: JSON.stringify(details) // ENVIANDO O JSON NOVO
     };
 
     try {
@@ -292,11 +307,21 @@ async function saveMaintenance() {
         });
 
         if (r.ok) {
-            alert("Manutenção registrada!");
+            alert("Registro salvo com sucesso!");
+            
+            // Limpeza
             removePhoto();
+            tempServices = [];
+            tempParts = [];
+            updateListsUI();
+            
+            // Volta para dashboard
             switchTab('dashboard');
             loadGlobalStats();
-        } else { alert("Erro ao salvar."); }
+        } else {
+            const err = await r.json();
+            alert("Erro: " + (err.error || "Erro desconhecido"));
+        }
     } catch (e) { console.error(e); }
 }
 
@@ -808,6 +833,128 @@ function setupFuelCalculation() {
         litersInput.addEventListener('input', calculate);
         priceInput.addEventListener('input', calculate);
     }
+}
+
+// 1. Renderiza os campos com base na seleção (Óleo, Lavagem, Manutenção)
+function renderMaintenanceFields() {
+    const type = document.getElementById('mDesc').value;
+    
+    // Blocos
+    const blockKmPrev = document.getElementById('blockKmPrev');
+    const blockServices = document.getElementById('blockServicesList');
+    const blockParts = document.getElementById('blockPartsList');
+
+    // Reset visual
+    blockKmPrev.classList.add('hidden');
+    blockServices.classList.add('hidden');
+    blockParts.classList.add('hidden');
+    
+    // Lógica de Exibição
+    if (type === 'Troca de Óleo') {
+        blockKmPrev.classList.remove('hidden');
+        blockParts.classList.remove('hidden'); // Óleo tem peças (óleo, filtro)
+    } 
+    else if (type === 'Manutenção Geral' || type === 'Manutenção') {
+        blockServices.classList.remove('hidden'); // Mão de obra
+        blockParts.classList.remove('hidden');    // Peças
+    } 
+    else if (type === 'Lavagem') {
+        blockServices.classList.remove('hidden'); // Apenas serviços
+    }
+
+    // Se selecionou outro serviço customizado que não seja os padrão, mostra tudo por segurança
+    else if (type !== "") {
+        blockServices.classList.remove('hidden');
+        blockParts.classList.remove('hidden');
+    }
+}
+
+// 2. Adiciona item à lista (Memória e Tela)
+function addItemToList(category) {
+    const nameId = category === 'service' ? 'addServName' : 'addPartName';
+    const valId = category === 'service' ? 'addServValue' : 'addPartValue';
+    
+    const nameEl = document.getElementById(nameId);
+    const valEl = document.getElementById(valId);
+    
+    const name = nameEl.value.trim();
+    const val = parseFloat(valEl.value);
+
+    if (!name || isNaN(val)) return alert("Preencha nome e valor!");
+
+    const item = { name, value: val };
+
+    if (category === 'service') {
+        tempServices.push(item);
+    } else {
+        tempParts.push(item);
+    }
+
+    // Limpa inputs
+    nameEl.value = '';
+    valEl.value = '';
+
+    updateListsUI();
+}
+
+// 3. Atualiza a UI das listas e calcula o Total Geral
+function updateListsUI() {
+    const listServ = document.getElementById('listServicesRender');
+    const listPart = document.getElementById('listPartsRender');
+    
+    // Renderiza Serviços
+    listServ.innerHTML = tempServices.map((item, index) => `
+        <li class="flex justify-between items-center bg-slate-50 p-2 rounded border border-slate-100">
+            <span>${item.name}</span>
+            <div class="flex items-center gap-3">
+                <span class="font-bold">R$ ${item.value.toFixed(2)}</span>
+                <button onclick="removeItem('service', ${index})" class="text-red-500"><i class="ph-bold ph-trash"></i></button>
+            </div>
+        </li>
+    `).join('');
+
+    // Renderiza Peças
+    listPart.innerHTML = tempParts.map((item, index) => `
+        <li class="flex justify-between items-center bg-orange-50 p-2 rounded border border-orange-100">
+            <span>${item.name}</span>
+            <div class="flex items-center gap-3">
+                <span class="font-bold text-orange-700">R$ ${item.value.toFixed(2)}</span>
+                <button onclick="removeItem('part', ${index})" class="text-red-500"><i class="ph-bold ph-trash"></i></button>
+            </div>
+        </li>
+    `).join('');
+
+    // Calcula Totais
+    const totalServ = tempServices.reduce((acc, item) => acc + item.value, 0);
+    const totalPart = tempParts.reduce((acc, item) => acc + item.value, 0);
+    const grandTotal = totalServ + totalPart;
+
+    // Atualiza Displays
+    document.getElementById('totalServicesDisplay').innerText = `R$ ${totalServ.toFixed(2)}`;
+    document.getElementById('totalPartsDisplay').innerText = `R$ ${totalPart.toFixed(2)}`;
+    
+    // Atualiza o Input Total Principal
+    const totalInput = document.getElementById('mTotalValue');
+    totalInput.value = grandTotal.toFixed(2);
+    
+    // Se tiver itens na lista, bloqueia edição manual do total para evitar erro
+    if (tempServices.length > 0 || tempParts.length > 0) {
+        totalInput.setAttribute('readonly', true);
+        totalInput.classList.add('bg-slate-100');
+    } else {
+        totalInput.removeAttribute('readonly');
+        totalInput.classList.remove('bg-slate-100');
+    }
+}
+
+// 4. Remove item da lista
+function removeItem(category, index) {
+    if (category === 'service') {
+        tempServices.splice(index, 1);
+    } else {
+        tempParts.splice(index, 1);
+    }
+    updateListsUI();
 }
 
 // ==================================================================
