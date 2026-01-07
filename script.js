@@ -309,29 +309,49 @@ async function loadHistory() {
 
         if (!container) return;
         if (movements.length === 0) {
-            container.innerHTML = '<p class="text-center text-gray-500 py-4">Sem atividades.</p>';
+            container.innerHTML = '<p class="text-center text-gray-400 py-8">Sem atividades recentes.</p>';
             return;
         }
 
         container.innerHTML = movements.map(m => {
             const isFuel = m.type === 'Abastecimento' || m.type === 'FUEL';
+            // Ícone visual
             const icon = isFuel ? 'ph-gas-pump' : 'ph-wrench';
-            const color = isFuel ? 'text-orange-600 bg-orange-100' : 'text-blue-600 bg-blue-100';
+            const colorBg = isFuel ? 'bg-orange-50 text-orange-600' : 'bg-blue-50 text-blue-600';
             
+            // Formatação da Data (DD/MM/YYYY) para ficar mais curta e bonita
+            const dateObj = new Date(m.date);
+            // Ajuste de fuso simples para visualização correta
+            const userTimezoneOffset = dateObj.getTimezoneOffset() * 60000;
+            const dateAdjusted = new Date(dateObj.getTime() + userTimezoneOffset);
+            const dateFmt = dateAdjusted.toLocaleDateString('pt-BR');
+
             return `
-            <div class="flex items-center justify-between p-4 border-b border-gray-100">
-                <div class="flex items-center gap-4">
-                    <div class="w-12 h-12 ${color} rounded-xl flex items-center justify-center">
-                        <i class="ph-fill ${icon} text-2xl"></i>
+            <div class="flex items-start justify-between p-4 border-b border-gray-50 last:border-0 hover:bg-slate-50 transition-colors">
+                <div class="flex items-start gap-3">
+                    <div class="w-10 h-10 ${colorBg} rounded-lg flex items-center justify-center shrink-0 mt-1">
+                        <i class="ph-fill ${icon} text-xl"></i>
                     </div>
-                    <div>
-                        <h4 class="font-bold text-slate-800">${m.plate}</h4>
-                        <p class="text-sm text-slate-500">${m.type} • ${m.date}</p>
+                    
+                    <div class="flex flex-col">
+                        <span class="font-bold text-slate-800 text-sm">${m.plate}</span>
+                        <span class="text-xs text-slate-600 font-medium mt-0.5">${m.type}</span>
+                        <span class="text-[10px] text-slate-400 mt-0.5 flex items-center gap-1">
+                            <i class="ph-bold ph-calendar-blank"></i> ${dateFmt}
+                        </span>
                     </div>
                 </div>
-                <div class="text-right">
-                    <p class="font-bold text-slate-800">R$ ${parseFloat(m.value).toFixed(2)}</p>
-                    ${m.receipt_image ? `<button onclick="openPhotoModal('${m.receipt_image}')" class="text-blue-500 text-sm"><i class="ph-fill ph-image"></i> Ver Foto</button>` : ''}
+
+                <div class="flex flex-col items-end gap-1">
+                    <span class="font-bold text-slate-800 text-sm whitespace-nowrap">
+                        R$ ${parseFloat(m.value).toFixed(2)}
+                    </span>
+                    
+                    ${m.receipt_image ? `
+                        <button onclick="openPhotoModal('${m.receipt_image}')" class="flex items-center gap-1 text-[10px] bg-blue-50 text-blue-600 px-2 py-1 rounded-md font-bold hover:bg-blue-100 transition-colors">
+                            <i class="ph-fill ph-image"></i> Ver
+                        </button>
+                    ` : ''}
                 </div>
             </div>`;
         }).join('');
