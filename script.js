@@ -35,8 +35,15 @@ window.onload = function() {
     if (document.getElementById('mDateTime')) document.getElementById('mDateTime').value = todayString;
     if (document.getElementById('tripEndDate')) document.getElementById('tripEndDate').value = todayString;
 
-    const mPlate = document.getElementById('mPlate');
-    if (mPlate) mPlate.addEventListener('change', (e) => fetchLastKm(e.target.value, 'mKmInitial'));
+    const mPlateSelect = document.getElementById('mPlate');
+    if (mPlateSelect) {
+        mPlateSelect.addEventListener('change', () => {
+            // Se já estiver na tela de troca de óleo e mudar o carro, busca os dados daquele carro
+            if (document.getElementById('mDesc').value === 'Troca de Óleo') {
+                fetchLastOilChangeData();
+            }
+        });
+    }
 };
 
 async function loadSystem() {
@@ -867,6 +874,10 @@ function renderMaintenanceFields() {
         blockServices.classList.remove('hidden');
         blockParts.classList.remove('hidden');
     }
+
+    if (type === 'Troca de Óleo') {
+        fetchLastOilChangeData();
+    }
 }
 
 // 2. Adiciona item à lista (Memória e Tela)
@@ -955,6 +966,41 @@ function removeItem(category, index) {
         tempParts.splice(index, 1);
     }
     updateListsUI();
+}
+
+// Função Inteligente para buscar última troca de óleo
+async function fetchLastOilChangeData() {
+    const plate = document.getElementById('mPlate').value;
+    const type = document.getElementById('mDesc').value;
+    const inputKmPrev = document.getElementById('mKmPrev');
+
+    // Só executa se tiver placa selecionada e for Troca de Óleo
+    if (!plate || type !== 'Troca de Óleo' || !currentUser) return;
+
+    // Feedback visual (opcional)
+    inputKmPrev.placeholder = "Buscando...";
+
+    try {
+        const res = await fetch(`${API_BASE_URL}/vehicle/last-oil/${plate}/${currentUser.company_id}`);
+        const data = await res.json();
+
+        if (data.found) {
+            // Se achou histórico: Preenche e BLOQUEIA edição
+            inputKmPrev.value = data.km;
+            inputKmPrev.setAttribute('readonly', true);
+            inputKmPrev.classList.add('bg-slate-200', 'text-slate-500'); // Visual de bloqueado
+            inputKmPrev.classList.remove('bg-slate-50');
+        } else {
+            // Se é a primeira vez: Deixa vazio e PERMITE edição
+            inputKmPrev.value = "";
+            inputKmPrev.removeAttribute('readonly');
+            inputKmPrev.classList.remove('bg-slate-200', 'text-slate-500');
+            inputKmPrev.classList.add('bg-slate-50');
+            inputKmPrev.placeholder = "Informe o KM da última troca";
+        }
+    } catch (error) {
+        console.error("Erro ao buscar histórico de óleo", error);
+    }
 }
 
 // ==================================================================
