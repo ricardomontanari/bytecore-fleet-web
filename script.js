@@ -572,14 +572,24 @@ async function saveSettings() {
 // Dados de Viagens
 async function submitCloseTrip() {
     const btn = event.currentTarget;
-    const plate = document.getElementById('closeTripVehicle').value;
-    const end_km = document.getElementById('closeTripKmFinal').value;
-    const toll_cost = document.getElementById('closeTripToll').value;
-    const tripDate = document.getElementById('tripEndDate').value;
+
+    const elPlate = document.getElementById('closeTripVehicle');
+    const elKm = document.getElementById('closeTripKmFinal');
+    const elToll = document.getElementById('closeTripToll');
+    const elDate = document.getElementById('tripEndDate');
+
+    if (!elPlate) return console.error("Erro: Campo 'closeTripVehicle' não encontrado no HTML");
+    if (!elKm) return console.error("Erro: Campo 'closeTripKmFinal' não encontrado no HTML");
+    if (!elToll) return console.error("Erro: Campo 'closeTripToll' não encontrado no HTML");
+    if (!elDate) return console.error("Erro: Campo 'tripEndDate' não encontrado no HTML");
+
+    const plate = elPlate.value;
+    const end_km = elKm.value;
+    const toll_cost = elToll.value;
+    const tripDate = elDate.value;
 
     if (!plate || !end_km) return alert("Preencha a Placa e o KM Final!");
 
-    // Feedback visual de carregamento
     const originalText = btn.innerHTML;
     btn.disabled = true;
     btn.innerHTML = "Processando...";
@@ -593,7 +603,7 @@ async function submitCloseTrip() {
                 company_id: currentUser.company_id,
                 end_km: parseInt(end_km),
                 toll_cost: parseFloat(toll_cost || 0),
-                date: tripDate
+                date: tripDate // Envia a data correta
             })
         });
 
@@ -601,19 +611,21 @@ async function submitCloseTrip() {
 
         if (response.ok) {
             alert("✅ Viagem Fechada!\n" + 
-                  "Lucro: R$ " + result.data.net_profit.toFixed(2) + "\n" +
+                  "Lucro: R$ " + parseFloat(result.data.net_profit).toFixed(2) + "\n" +
                   "Média: " + result.data.average_consumption + " KM/L");
             
             // Limpar campos
-            document.getElementById('closeTripKmFinal').value = '';
-            document.getElementById('closeTripToll').value = '';
+            elKm.value = '';
+            elToll.value = '';
             
             // Atualizar Dashboard e Histórico
             loadSystem(); 
+            switchTab('dashboard'); // Volta para o início
         } else {
             alert("Erro: " + result.error);
         }
     } catch (error) {
+        console.error(error);
         alert("Falha na conexão com o servidor.");
     } finally {
         btn.disabled = false;
